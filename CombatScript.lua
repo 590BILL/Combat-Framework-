@@ -1,7 +1,6 @@
-# Combat-Framework-
-Scripter : 590BILL
-Discord : 590bill
-Roblox : 590Bill
+--# Combat Framework 
+--Discord : 590BIll
+--Roblox : 590Bill
 
 -- //////COMBAT FRAMEWORK (SERVER AUTHORITATIVE)////////
 -- // Controls All Melee Combat Logic 
@@ -19,7 +18,7 @@ Roblox : 590Bill
 --///////////////////////////////////////////////////////////
 
 
-
+--!optimize 2
 --/ Services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -76,11 +75,10 @@ local PlayerCombats = {}
 local NpcCombats = {}
 Combat.__index = Combat
 
-
 -- ///  The Player's Combat State
 --///  The Cooldowns Are Server Authoritive To Prevent Exploitation
 --///  Use Observers To Automatically Replicate All State Changes To The Client
---///  Check If The Model Belongs To A Player If Not Then Set It For  The NpcCombat FrameWork
+--///  Check If The Object Is A Player If Not Then Set It For  The Other FrameWork
 
 function Combat.New(Character:Model)
 	local self = setmetatable({} , Combat)
@@ -171,7 +169,6 @@ function Combat:CreateHitbox(range , size , ignorelist)
 				table.insert(hithumanoids , humanoid)
 			end
 		end		
-		
 	end
 	return hithumanoids
 end
