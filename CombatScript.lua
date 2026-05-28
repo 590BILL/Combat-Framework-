@@ -70,15 +70,16 @@ export type Combat = {
 
 --/Combat State
 local Combat:Combat = {}
+Combat.__index = Combat
 
 --//// Store The Player's Combat State
 local PlayerCombats = {}
 
 --/// Store The Npc's Combat State
 local NpcCombats = {}
-Combat.__index = Combat
 
 
+-- A Dictionary Is Made For The Cooldowns And Delays
 local Configs = {
 	
 	stunCooldown = 1.75,
@@ -190,7 +191,7 @@ end
 
 --[[
  ///////////////////////////////////////////////////////////////////////////////////////////////
- Register Callback Triggers Whenever A Combat State 
+ Register Callback Triggers Whenever Changes Are Made To The Combat Instance
  Used For 
  Ui Updates 
  Animation Syncing
