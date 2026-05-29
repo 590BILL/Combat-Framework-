@@ -70,16 +70,15 @@ export type Combat = {
 
 --/Combat State
 local Combat:Combat = {}
-Combat.__index = Combat
 
 --//// Store The Player's Combat State
 local PlayerCombats = {}
 
 --/// Store The Npc's Combat State
 local NpcCombats = {}
+Combat.__index = Combat
 
-
--- A Dictionary Is Made For The Cooldowns And Delays
+-- Refactored Combat Cooldowns And Timers Into A Shared Configuration Table
 local Configs = {
 	
 	stunCooldown = 1.75,
@@ -191,9 +190,10 @@ end
 
 --[[
  ///////////////////////////////////////////////////////////////////////////////////////////////
- Register Callback Triggers Whenever Changes Are Made To The Combat Instance
+ Register Callback Triggers Whenever A Change is Made On The Combat System
  Used For 
- Ui Updates 
+Cooldowns
+Ui Updates 
  Animation Syncing
  Vfx Triggers
 ]]
@@ -341,6 +341,7 @@ end
 --[[
 /////////////////////////////////////////////////////////////////////////////////////////
 Set The Stun Of The Istance
+Ragdoll Validation To Prevent Duplicate Physics State Application
 To Prevent The Enemy From Doing Any Kind Of Action While The Player Is Hitting
 Apply A Slight KnockBack To Allow The Enemy To Escape If It Gets Out Of Range Of The Player
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -348,8 +349,8 @@ Apply A Slight KnockBack To Allow The Enemy To Escape If It Gets Out Of Range Of
 function Combat:Stun(targethumanoid:Humanoid)
 
 	local targetcombat = self:GetCombat(targethumanoid)
-	if targetcombat:GetState("IsRagdoll") then return end
-	
+	if targetcombat:GetState("IsRagdoll") or targethumanoid:GetState() == Enum.HumanoidStateType.Physics then return end
+	 
 	local targethrp  , _t = targetcombat:GetMainComponents()
 	 local combo = self:GetState("HasCombo")
 	 local selfhrp , _s = self:GetMainComponents()
@@ -604,5 +605,7 @@ combatRemote.OnServerEvent:Connect(function(plr , event:string)
 	
 	method(plrcombat)
 end)
+
+
 
 
