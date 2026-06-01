@@ -7,15 +7,12 @@
 -- Server authoritative cooldowns to prevent exploits
 -- Flow : Client Input -> Remote -> Server Validation -> State Changes -> Replication
 
-
 --!optimize 2
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local remotes = ReplicatedStorage:FindFirstChild("Remotes")
 local combatRemote = remotes:FindFirstChild("CombatRemote")
-
 
 -- Validation Layer 
 local allowedEvents = {
@@ -25,10 +22,8 @@ local allowedEvents = {
 export type Combat = {
 	 Character :Model ,
 	 Cooldowns : {[string] : boolean } ,
- 	
-      	
-	
-	 -- State System (Changes Automatically Replicate To Client)
+	 
+	-- State System (Changes Automatically Replicate To Client)
 	 
 	 GetCombat : (self:Combat , descendant:Instance) -> Combat , 
 	 SetHumanoid : (self:Combat , speed:number , height:number , canrotate:boolean) -> (),
