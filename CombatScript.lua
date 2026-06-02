@@ -124,7 +124,6 @@ end
 function Combat:Destroy()
 	if self.DeathConnection then 
 		self.DeathConnection:Disconnect()
-		
 	end
 	
 	for _ , v in pairs(self)  do
@@ -143,12 +142,11 @@ function Combat:GetCombat(descendant:Instance)
 		targetModel = descendant
 	else
 		targetModel = descendant and descendant:FindFirstAncestorOfClass("Model")
-	end
-		
+	end	
 		if not targetModel then 
 			return nil  
 		end	 
-			
+	
 	local player = Players:GetPlayerFromCharacter(targetModel) 
 		local targetCombat = player and playerCombats[player.UserId] or npcCombats[targetModel]
 		if not targetCombat then
@@ -162,6 +160,7 @@ end
 --Return Core Physical Components Of A Character 
 -- HumanoidRootPart For Movement / Physics 
 -- Humanoid For State Control
+
 function Combat:GetMainComponents()
 	local character:Model = self.Character
 	if not character then 
@@ -180,6 +179,7 @@ end
 
 
 -- Set The Necessary Humanoid Properties Of The Character
+
 function Combat:SetHumanoid(speed:number , height:number , canrotate:boolean)
 	local humanoidRootPart , selfhumanoid:Humanoid = self:GetMainComponents()
 	
@@ -304,7 +304,6 @@ end
 function Combat:ResetHumanoid()
 	local hrp , humanoid = self:GetMainComponents()
 	self:SetHumanoid(16 , 50 , true)
-	
 end
 
  --Ragdoll The Combat Object
@@ -528,7 +527,10 @@ function Combat:Punch()
 				continue
 			end
 			
-			if  targetCombat:GetState("IsRagdoll") then continue end
+			if  targetCombat:GetState("IsRagdoll") then 
+				continue 
+			end
+			
 			if not  self:CheckBlockAngle(hitsHumanoids) then
 				continue 
 			end
@@ -581,6 +583,7 @@ Players.PlayerAdded:Connect(function(player)
 end)
 
 --Remove The Player's Combat Instance In Order To Prevent Memory Leakes
+
 Players.PlayerRemoving:Connect(function(player)
 	playerCombats[player.UserId] = nil
 end)
@@ -605,8 +608,8 @@ combatRemote.OnServerEvent:Connect(function(plr , event:string)
 	if playerCombat.Cooldowns[event]  then 
 		return 
 	end
-	local method = playerCombat[event]
 	
+	local method = playerCombat[event]
 	if type(method) ~= "function" then 
 		return 
 	end
