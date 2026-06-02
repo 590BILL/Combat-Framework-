@@ -249,8 +249,6 @@ function Combat:CreateHitbox(range , size , ignorelist)
 	return hitHumanoids
 end
 
-
-
 --The Instance's State Is Set Using Attributes To Allow Replication
 --Any State Changes Are Replicated To The Client 
 --To Allow Client Ui Changes
@@ -290,14 +288,12 @@ function Combat:UnStun()
 	
 end
 
- 
  --This is Used For The Stun , Ragdoll And The Dash
  --To Prevent Weird Client Input Desyncs 
 
 function Combat:FreezeHumanoid()
 	self:SetHumanoid(0 , 0 , false)
 end
-
 
 --Enable All Movement To Prevent Permanent Freeze Of The Model 
 
@@ -321,11 +317,9 @@ function Combat:Ragdoll()
 	 end
 	
 	self:SetState("IsRagdoll" , true)
-	
 
 	 humanoid:ChangeState(Enum.HumanoidStateType.Physics)
 	 
-	-- Humanoid Properties
 	self:FreezeHumanoid()
 	 
 	--//Set Back To Default To Prevent The Player From Permanently Being Stucked In The State
@@ -370,7 +364,7 @@ function Combat:Stun(targetHumanoid:Humanoid)
 end
 
 --Find The Direction The Target Is Facing
---To Prevent A Weird 360' Degree Block Abuse 
+--To Prevent A  360' Degree Block Abuse 
 
 function Combat:CheckBlockAngle(targethumanoid:Humanoid)
 	local targetCombat: Combat = self:GetCombat(targethumanoid)
@@ -451,7 +445,6 @@ end
 --Set A Cooldown For The Dash
 
 function Combat:Dash()
-	
 	if self:GetState("IsStunned") or self:GetState("IsRagdoll") or self:GetState("IsBlocking") then 
 		return 
 	end
@@ -473,7 +466,6 @@ function Combat:Dash()
 	 linearvelocity.RelativeTo = Enum.ActuatorRelativeTo.World
 	 linearvelocity.ForceLimitsEnabled = false
      linearvelocity.VectorVelocity = direction  * CONFIG.dashForce + Vector3.new(0 , 2 , 0)
-	
 
 	 task.delay(CONFIG.dashDelay, function()
 			if linearvelocity then
@@ -493,7 +485,6 @@ end
 -- Handles Hit Detection , Player Damage Logic , Combo Logic , Cooldown Logic 
 
 function Combat:Punch()
-
    if self:GetState("IsBlocking") 
 		or self:GetState("IsDashing") 
 		or self:GetState("IsRagdoll") then 
