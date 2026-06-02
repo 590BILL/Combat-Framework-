@@ -241,9 +241,11 @@ function Combat:CreateHitbox(range , size , ignorelist)
 		 local targetCombat: Combat = self:GetCombat(primaryPart)
 		 local targetHumanoidRootPart , targetHumanoid: Humanoid = targetCombat:GetMainComponents()
 		if  targetHumanoid and targetHumanoid.Health > 0  then 
+			
 			if not table.find(hitHumanoids , targetHumanoid)   then
 				table.insert(hitHumanoids , targetHumanoid)
 			end
+		
 		end		
 	end
 	return hitHumanoids
@@ -338,9 +340,11 @@ end
 --Apply A Slight KnockBack To Allow The Enemy To Escape If It Gets Out Of Range Of The Player
 
 function Combat:Stun(targetHumanoid:Humanoid)
-
 	local targetCombat = self:GetCombat(targetHumanoid)
-	if targetCombat:GetState("IsRagdoll") or targetHumanoid:GetState() == Enum.HumanoidStateType.Physics then 
+	
+	if targetCombat:GetState("IsRagdoll") 
+	 or targetHumanoid:GetState() == Enum.HumanoidStateType.Physics 
+	then 
 		return 
 	end
 	 
@@ -391,7 +395,10 @@ end
 --To Prevent Block Abuse And Exploit Behaviour During Combat
 
 function Combat:Block()
-	if self:GetState("IsStunned") or self:GetState("IsRagdoll") or self:GetState("IsDashing") then 
+	if self:GetState("IsStunned") 
+		or self:GetState("IsRagdoll") 
+		or self:GetState("IsDashing") 
+	then 
 		return 
 	end
 	self:SetState("IsBlocking" , true)
@@ -445,11 +452,16 @@ end
 --Set A Cooldown For The Dash
 
 function Combat:Dash()
-	if self:GetState("IsStunned") or self:GetState("IsRagdoll") or self:GetState("IsBlocking") then 
+	if self:GetState("IsStunned") 
+		or self:GetState("IsRagdoll") 
+		or self:GetState("IsBlocking") 
+	then 
 		return 
 	end
 	
-	if self:HasCooldown("Dash") then return end
+	if self:HasCooldown("Dash") then 
+		return 
+	end
 	
 	self:SetState("IsDashing" , true)
 		
@@ -487,7 +499,8 @@ end
 function Combat:Punch()
    if self:GetState("IsBlocking") 
 		or self:GetState("IsDashing") 
-		or self:GetState("IsRagdoll") then 
+		or self:GetState("IsRagdoll") 
+	then 
 		return 
    end
 	
@@ -499,12 +512,12 @@ function Combat:Punch()
 	
 	local hits = self:CreateHitbox( selfhumanoidRootPart.CFrame * CFrame.new(0 , 0 , -3 ) , Vector3.new(5 , 5 , 5) , {self.Character} )
 	local combo = self:GetState("ComboCount") or 1
-
-
+	
 	self:SetHumanoid(10 , 0 , true)
 	-- 
 	for _ , hitsHumanoids: Humanoid in ipairs(hits) do
-		if hitsHumanoids then
+		if hitsHumanoids  then
+			
 			local targetCombat = self:GetCombat(hitsHumanoids)
 			local targetPrimaryPart = targetCombat.Character.PrimaryPart
 			
