@@ -545,7 +545,7 @@ function Combat:Punch()
 		end
 	end	
 
-    combo += 1
+    combo = combo + 1
 	
 	if combo > 4 then
 		combo = 1
