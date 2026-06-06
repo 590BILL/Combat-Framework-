@@ -61,24 +61,25 @@ local npcCombats = {}
 
 -- Config Values (Tuning Constants)
 local CONFIG = {
-	stunCooldown = 1.75,
+	stunCooldown = 1.75 ,
 	stunKnockBack = 25 ,
 
 	punchCooldown = 0.75 ,
-	comboResetTimer = 5,
+	comboResetTimer = 5 ,
 	damage = 10 ,
 	
 	ragdollCooldown = 2 ,
-	ragdollKnockBack = 50,
+	ragdollKnockBack = 50 ,
 
-	dashDelay = 1,
+	dashDelay = 1 ,
 	dashCooldown = 5 ,
 	dashForce = 60 ,
 
+	maxDistance = 12
 }
 
 --Each Character Receives Its Own Combat Instance to Isolate
---State , Cooldowns And Combat Logic
+--States , Cooldowns And Combat Logic
 
 function Combat.new(character:Model)
 	if not character then 
@@ -126,7 +127,7 @@ function Combat:Destroy()
 		self.DeathConnection:Disconnect()
 	end
 	
-	for _ , v in pairs(self)  do
+	for _, v in pairs(self)  do
 		if typeof(v) == "RBXScriptConnection" then
 			v:Disconnect()
 		end
@@ -314,7 +315,7 @@ function Combat:Ragdoll()
 		return 
 	 end 
 	 
-	 if humanoid.Health <= 0  then 
+	 if humanoid.Health <= 0 then 
 		return 
 	 end
 	
@@ -372,17 +373,17 @@ end
 
 function Combat:CheckBlockAngle(targethumanoid:Humanoid)
 	local targetCombat: Combat = self:GetCombat(targethumanoid)
-    local targetHumanoidRootPart: BasePart , _humanoid  = targetCombat:GetMainComponents() 
+    local targetHumanoidRootPart: BasePart , _ = targetCombat:GetMainComponents() 
 	
-	local selfHumanoidRootPart: BasePart , selfHumanoid =  self:GetMainComponents()
+	local selfHumanoidRootPart: BasePart , _ =  self:GetMainComponents()
 	
 	if not targetCombat:GetState("IsBlocking") then 
 		return true 
 	end
 	local direction = (selfHumanoidRootPart.Position - targetHumanoidRootPart.Position).Unit
 	local dot = targetHumanoidRootPart.CFrame.LookVector:Dot(direction)
-	print(dot)
-	
+
+	-- Return True If The Player Is Infront (Dot = 1 or Greater Than 0.6)
 	if dot > 0.6 then
 		return true
 	else 
@@ -508,41 +509,35 @@ function Combat:Punch()
 		return 
 	end
 	
-	local selfhumanoidRootPart , selfhumanoid   = self:GetMainComponents()
+	local selfHumanoidRootPart , selfHumanoid   = self:GetMainComponents()
+    local hitOffset = selfHumanoidRootPart.CFrame * CFrame.new(0 , 0 , -3 )
 	
-	local hits = self:CreateHitbox( selfhumanoidRootPart.CFrame * CFrame.new(0 , 0 , -3 ) , Vector3.new(5 , 5 , 5) , {self.Character} )
+	local hits = self:CreateHitbox( hitOffset , Vector3.new(5 , 5 , 5) , {self.Character} )
 	local combo = self:GetState("ComboCount") or 1
 	
 	self:SetHumanoid(10 , 0 , true)
-	-- 
-	for _ , hitsHumanoids: Humanoid in ipairs(hits) do
-		if hitsHumanoids  then
+
+	for _, hitsHumanoid: Humanoid in ipairs(hits) do
 			
-			local targetCombat = self:GetCombat(hitsHumanoids)
+			local targetCombat = self:GetCombat(hitsHumanoid)
 			local targetPrimaryPart = targetCombat.Character.PrimaryPart
 			
 			if not targetPrimaryPart then
 				continue
 			end
 			
-			local distance = (selfhumanoidRootPart.Position - targetPrimaryPart.Position).Magnitude
+			-- Distance Security Check To Prevent Exploits
+			local distance = (selfHumanoidRootPart.Position - targetPrimaryPart.Position).Magnitude
 			
-			if distance > CONFIG.maxDistance  then
+			if distance > CONFIG.maxDistance  
+			 or targetCombat:GetState("IsRagdoll")   -- Ignore If The Target Is In Ragdoll State
+			 or not self:CheckBlockAngle(hitsHumanoid) -- Ignore If The Target Infront is Blocking While Facing The Player
+			then
 				continue
 			end
 			
-			if  targetCombat:GetState("IsRagdoll") then 
-				continue 
-			end
-			
-			if not  self:CheckBlockAngle(hitsHumanoids) then
-				continue 
-			end
-			
-			hitsHumanoids:TakeDamage(CONFIG.damage)
-			self:Stun(hitsHumanoids)
-
-		end
+			hitsHumanoid:TakeDamage(CONFIG.damage)
+			self:Stun(hitsHumanoid)
 	end	
 
     combo = combo + 1
@@ -553,7 +548,8 @@ function Combat:Punch()
   
 	self:SetState("ComboCount",  combo )
 	self:SetCooldown("Punch" , CONFIG.punchCooldown)
-
+	
+	-- Reset The Humanoid's Properties After The Punch 
     task.delay(CONFIG.punchCooldown , function() 
       self:ResetHumanoid()
     end)
@@ -609,7 +605,7 @@ combatRemote.OnServerEvent:Connect(function(plr , event:string)
 		return 
 	end
 	
-	if playerCombat.Cooldowns[event]  then 
+	if playerCombat.Cooldowns[event] then 
 		return 
 	end
 	
