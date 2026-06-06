@@ -25,18 +25,18 @@ export type Combat = {
 	 
 	-- State System (Changes Automatically Replicate To Client)
 	 
-	 GetCombat : (self:Combat , descendant:Instance) -> Combat , 
+	 GetCombat : (self:Combat , descendant:Instance) -> Combat, 
 	 SetHumanoid : (self:Combat , speed:number , height:number , canrotate:boolean) -> (),
-	 SetState : (self:Combat , name:string , value:any) -> () ,
-	 GetState : (self:Combat , name:string) -> boolean | number ,
+	 SetState : (self:Combat , name:string , value:any) -> (),
+	 GetState : (self:Combat , name:string) -> boolean | number,
     	
 	
-	 SetCooldown : (self:Combat, name:string , duration:number) -> () ,
-	 HasCooldown : (self:Combat , OnCooldown:string) -> boolean ,
+	 SetCooldown : (self:Combat, name:string , duration:number) -> (),
+	 HasCooldown : (self:Combat , OnCooldown:string) -> boolean,
 	 FreezeHumanoid : (self:Combat) -> (),
 	 ResetHumanoid : (self:Combat) -> (),
    
-     GetMainComponents :(self:Combat)  -> (BasePart , Humanoid) ,
+     GetMainComponents :(self:Combat)  -> (BasePart , Humanoid),
      Destroy : (self:Combat) -> (),
    
    -- Combat Actions
@@ -46,7 +46,7 @@ export type Combat = {
 	UnBlock : (self:Combat) -> (),
 	Dash : (self:Combat) -> (),
 	Stun : (self:Combat , target:Humanoid) -> (),
-	UnStun:(self:Combat) -> () ,
+	UnStun:(self:Combat) -> (),
 		
 } 
 
@@ -61,22 +61,23 @@ local npcCombats = {}
 
 -- Config Values (Tuning Constants)
 local CONFIG = {
-	stunCooldown = 1.75 ,
-	stunKnockBack = 25 ,
+	stunCooldown = 1.75,
+	stunKnockBack = 25,
 
-	punchCooldown = 0.75 ,
-	comboResetTimer = 5 ,
-	damage = 10 ,
+	punchCooldown = 0.75,
+	comboResetTimer = 5,
+	damage = 10,
 	
-	ragdollCooldown = 2 ,
-	ragdollKnockBack = 50 ,
+	ragdollCooldown = 2,
+	ragdollKnockBack = 50,
 
-	dashDelay = 1 ,
-	dashCooldown = 5 ,
-	dashForce = 60 ,
+	dashDelay = 1,
+	dashCooldown = 5,
+	dashForce = 60,
 
 	maxDistance = 12
 }
+
 
 --Each Character Receives Its Own Combat Instance to Isolate
 --States , Cooldowns And Combat Logic
@@ -121,7 +122,6 @@ end
 
 
 -- Destroy The Combat Instance To Prevent Memory Leak
-
 function Combat:Destroy()
 	if self.DeathConnection then 
 		self.DeathConnection:Disconnect()
