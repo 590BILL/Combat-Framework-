@@ -134,7 +134,8 @@ function Combat:Destroy()
 	end
 	table.clear(self)
 end
-	
+
+
 --Retreive The Combat Instance From Any Descendant Of The Model 
 function Combat:GetCombat(descendant:Instance)
 	local targetModel 
@@ -157,7 +158,6 @@ function Combat:GetCombat(descendant:Instance)
 	  return targetCombat 
 end
 
-
 --Return Core Physical Components Of A Character 
 -- HumanoidRootPart For Movement / Physics 
 -- Humanoid For State Control
@@ -178,9 +178,7 @@ function Combat:GetMainComponents()
   return humanoidRootPart , humanoid
 end
 
-
 -- Set The Necessary Humanoid Properties Of The Character
-
 function Combat:SetHumanoid(speed:number , height:number , canrotate:boolean)
 	local humanoidRootPart , selfhumanoid:Humanoid = self:GetMainComponents()
 	
@@ -204,8 +202,7 @@ function Combat:OnChanged(callback)
 	table.insert(self.Events.OnChanged , callback)
 end
 
-
---/// Callback All The Functions Tied To A Specific Event
+-- Callback All The Functions Tied To A Specific Event
 function Combat:Callback(eventCall:string , ...)
 	local events = self.Events[eventCall]
 	if not events then 
@@ -216,7 +213,6 @@ function Combat:Callback(eventCall:string , ...)
 		callback(...)
 	end
 end
-
 
 --Used Spatial Query (GetPartsBoundsInBox)
 --  To Avoid UnReliable Touched Events
@@ -263,12 +259,12 @@ function Combat:SetState(name:string , value:any)
 	self:Callback("OnChanged" , name , value)
 	
 end
+
 -- Get The State Of The Combat Instance Using Attributes
 function Combat:GetState(name:string)
 	local character: Model = self.Character
 	return character:GetAttribute(name)
 end
-
 
 --UnStun The Combat Object 
 --Cancel The UnStun( Using task.cancel() )If The Method Was Called Again
@@ -299,7 +295,6 @@ function Combat:FreezeHumanoid()
 end
 
 --Enable All Movement To Prevent Permanent Freeze Of The Model 
-
 function Combat:ResetHumanoid()
 	local hrp , humanoid = self:GetMainComponents()
 	self:SetHumanoid(16 , 50 , true)
@@ -308,7 +303,7 @@ end
  --Ragdoll The Combat Object
  --Full Physical Simulation Of The Instance
  --Prevents The Player's From Fighting During Knockdown
-   
+
 function Combat:Ragdoll()
 	 local humanoidRootPart  , humanoid  = self:GetMainComponents()
 	 if self:GetState("IsRagdoll") then 
@@ -325,14 +320,13 @@ function Combat:Ragdoll()
 	 
 	self:FreezeHumanoid()
 	 
-	--//Set Back To Default To Prevent The Player From Permanently Being Stucked In The State
+	--/Set Back To Default To Prevent The Player From Permanently Being Stucked In The State
 	task.delay(CONFIG.ragdollCooldown , function()
 		self:ResetHumanoid() 
 		self:SetState("IsRagdoll" , false)
 		humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
 		
 	end)
-
 end
 
 --Set The Stun Of The Istance
@@ -364,8 +358,6 @@ function Combat:Stun(targetHumanoid:Humanoid)
 		targetCombat:Ragdoll()
 	    targetHumanoidRootPart.AssemblyLinearVelocity =  selfHumanoidRootPart.CFrame.LookVector * CONFIG.ragdollKnockBack + Vector3.new(0 , 0 , -5)
 	 end
-	
-	
 end
 
 --Find The Direction The Target Is Facing
@@ -404,7 +396,8 @@ function Combat:Block()
 	end
 	self:SetState("IsBlocking" , true)
 end
---// Check If The Combat Object is Blocking And Then Set It To False
+
+-- Check If The Combat Object is Blocking And Then Set It To False
 function Combat:UnBlock()
 	if self:GetState("IsBlocking") then
 	  self:SetState("IsBlocking",false)
@@ -414,7 +407,7 @@ end
 
 --Enforces Server Side Cooldowns Per Method To Prevent Spam
 --Ensure Proper Combat Pacing Across All Clients
- 
+
 function Combat:SetCooldown(name:string , duration:number)
 	if self.Cooldowns[name] then 
 		return 
@@ -428,8 +421,8 @@ function Combat:SetCooldown(name:string , duration:number)
 	end)
 end
 
---Check If Combat Action Is On Cooldown
 
+--Check If Combat Action Is On Cooldown
 function Combat:HasCooldown(name:string)
 	return self.Cooldowns[name]
 end
@@ -446,6 +439,7 @@ function Combat:ResetCombo()
 		print("Resetting Combo")
 	end)	
 end
+
 
 --Check If The Player Is In The Suitable State For A Dash 
 --And Disable All Movements To Prevent Weird Movements During A Dash
@@ -559,7 +553,6 @@ end
 
 
 --Player Intialization On Spwan
-
 Players.PlayerAdded:Connect(function(player)
 	player.CharacterAdded:Connect(function(character)
 		if playerCombats[player.UserId] then
@@ -583,7 +576,6 @@ Players.PlayerAdded:Connect(function(player)
 end)
 
 --Remove The Player's Combat Instance In Order To Prevent Memory Leakes
-
 Players.PlayerRemoving:Connect(function(player)
 	playerCombats[player.UserId] = nil
 end)
@@ -601,11 +593,7 @@ combatRemote.OnServerEvent:Connect(function(plr , event:string)
 	end  
 	local playerCombat = playerCombats[plr.UserId]     
 	
-	if not playerCombat then 
-		return 
-	end
-	
-	if playerCombat.Cooldowns[event] then 
+	if not playerCombat or playerCombat.Cooldowns[event] then 
 		return 
 	end
 	
