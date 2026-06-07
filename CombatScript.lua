@@ -164,7 +164,7 @@ end
 -- Humanoid For State Control
 
 function Combat:GetMainComponents()
-	local character:Model = self.Character
+	local character :Model = self.Character
 	if not character then 
 		return nil , nil 
 	end
