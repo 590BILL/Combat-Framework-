@@ -5,6 +5,7 @@
 -- COMBAT FRAMEWORK (SERVER AUTHORITATIVE)
 -- Controls All Melee Combat Logic (Punch , Block , Dash)
 -- Server authoritative cooldowns to prevent exploits
+-- The Event Listener Is  Used For The Cooldowns While The Attributes Are Used For The States
 -- Flow : Client Input -> Remote -> Server Validation -> State Changes -> Replication
 
 --!optimize 2
@@ -253,6 +254,7 @@ end
 --To Allow Client Ui Changes
 --Sync The Animations 
 
+
 function Combat:SetState(name:string , value:any)
 	local character: Model = self.Character
 	character:SetAttribute(name , value)
@@ -407,7 +409,6 @@ end
 
 --Enforces Server Side Cooldowns Per Method To Prevent Spam
 --Ensure Proper Combat Pacing Across All Clients
-
 function Combat:SetCooldown(name:string , duration:number)
 	if self.Cooldowns[name] then 
 		return 
@@ -575,7 +576,7 @@ Players.PlayerAdded:Connect(function(player)
 	end)
 end)
 
---Remove The Player's Combat Instance In Order To Prevent Memory Leakes
+--Remove The Player's Combat Instance In Order To Prevent Memory Leaks
 Players.PlayerRemoving:Connect(function(player)
 	playerCombats[player.UserId] = nil
 end)
