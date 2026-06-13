@@ -164,12 +164,12 @@ end
 -- Humanoid For State Control
 
 function Combat:GetMainComponents()
-	local character :Model = self.Character
+	local character  = self.Character
 	if not character then 
 		return nil , nil 
 	end
-	local humanoidRootPart:BasePart = character and character.PrimaryPart or character:WaitForChild("HumanoidRootPart")
-	local humanoid:Humanoid = character and  character:FindFirstChildOfClass("Humanoid")
+	local humanoidRootPart = character and character.PrimaryPart or character:WaitForChild("HumanoidRootPart")
+	local humanoid = character and  character:FindFirstChildOfClass("Humanoid")
 	
 	
 	if not humanoidRootPart or not humanoid then
@@ -180,8 +180,8 @@ function Combat:GetMainComponents()
 end
 
 -- Set The Necessary Humanoid Properties Of The Character
-function Combat:SetHumanoid(speed:number , height:number , canrotate:boolean)
-	local humanoidRootPart , selfhumanoid:Humanoid = self:GetMainComponents()
+function Combat:SetHumanoid(speed , height , canrotate)
+	local humanoidRootPart , selfhumanoid = self:GetMainComponents()
 	
 	if not selfhumanoid then 
 		return
@@ -256,7 +256,7 @@ end
 
 
 function Combat:SetState(name:string , value:any)
-	local character: Model = self.Character
+	local character = self.Character
 	character:SetAttribute(name , value)
 	self:Callback("OnChanged" , name , value)
 	
@@ -264,7 +264,7 @@ end
 
 -- Get The State Of The Combat Instance Using Attributes
 function Combat:GetState(name:string)
-	local character: Model = self.Character
+	local character = self.Character
 	return character:GetAttribute(name)
 end
 
@@ -296,15 +296,15 @@ function Combat:FreezeHumanoid()
 	self:SetHumanoid(0 , 0 , false)
 end
 
---Enable All Movement To Prevent Permanent Freeze Of The Model 
+-- Enable All Movement To Prevent Permanent Freeze Of The Model 
 function Combat:ResetHumanoid()
 	local hrp , humanoid = self:GetMainComponents()
 	self:SetHumanoid(16 , 50 , true)
 end
 
- --Ragdoll The Combat Object
- --Full Physical Simulation Of The Instance
- --Prevents The Player's From Fighting During Knockdown
+ -- Ragdoll The Combat Object
+ -- Full Physical Simulation Of The Instance
+ -- Prevents The Player's From Fighting During Knockdown
 
 function Combat:Ragdoll()
 	 local humanoidRootPart  , humanoid  = self:GetMainComponents()
@@ -322,7 +322,7 @@ function Combat:Ragdoll()
 	 
 	self:FreezeHumanoid()
 	 
-	--/Set Back To Default To Prevent The Player From Permanently Being Stucked In The State
+	-- Set Back To Default To Prevent The Player From Permanently Being Stucked In The State
 	task.delay(CONFIG.ragdollCooldown , function()
 		self:ResetHumanoid() 
 		self:SetState("IsRagdoll" , false)
@@ -331,10 +331,10 @@ function Combat:Ragdoll()
 	end)
 end
 
---Set The Stun Of The Istance
---Ragdoll Validation To Prevent Duplicate Physics State Application
---To Prevent The Enemy From Doing Any Kind Of Action While The Player Is Hitting
---Apply A Slight KnockBack To Allow The Enemy To Escape If It Gets Out Of Range Of The Player
+-- Set The Stun Of The Istance
+-- Ragdoll Validation To Prevent Duplicate Physics State Application
+-- To Prevent The Enemy From Doing Any Kind Of Action While The Player Is Hitting
+-- Apply A Slight KnockBack To Allow The Enemy To Escape If It Gets Out Of Range Of The Player
 
 function Combat:Stun(targetHumanoid:Humanoid)
 	local targetCombat = self:GetCombat(targetHumanoid)
@@ -362,14 +362,14 @@ function Combat:Stun(targetHumanoid:Humanoid)
 	 end
 end
 
---Find The Direction The Target Is Facing
---To Prevent A  360' Degree Block Abuse 
+-- Find The Direction The Target Is Facing
+-- To Prevent A  360' Degree Block Abuse 
 
 function Combat:CheckBlockAngle(targethumanoid:Humanoid)
-	local targetCombat: Combat = self:GetCombat(targethumanoid)
-    local targetHumanoidRootPart: BasePart , _ = targetCombat:GetMainComponents() 
+	local targetCombat = self:GetCombat(targethumanoid)
+    local targetHumanoidRootPart ,_ = targetCombat:GetMainComponents() 
 	
-	local selfHumanoidRootPart: BasePart , _ =  self:GetMainComponents()
+	local selfHumanoidRootPart ,_ =  self:GetMainComponents()
 	
 	if not targetCombat:GetState("IsBlocking") then 
 		return true 
@@ -386,8 +386,8 @@ function Combat:CheckBlockAngle(targethumanoid:Humanoid)
 end
 
 
---Check If The Player Is In The  Ideal State  To Allow Block
---To Prevent Block Abuse And Exploit Behaviour During Combat
+-- Check If The Player Is In The  Ideal State  To Allow Block
+-- To Prevent Block Abuse And Exploit Behaviour During Combat
 
 function Combat:Block()
 	if self:GetState("IsStunned") 
@@ -407,8 +407,8 @@ function Combat:UnBlock()
 	
 end
 
---Enforces Server Side Cooldowns Per Method To Prevent Spam
---Ensure Proper Combat Pacing Across All Clients
+-- Enforces Server Side Cooldowns Per Method To Prevent Spam
+-- Ensure Proper Combat Pacing Across All Clients
 function Combat:SetCooldown(name:string , duration:number)
 	if self.Cooldowns[name] then 
 		return 
@@ -423,7 +423,7 @@ function Combat:SetCooldown(name:string , duration:number)
 end
 
 
---Check If Combat Action Is On Cooldown
+-- Check If Combat Action Is On Cooldown
 function Combat:HasCooldown(name:string)
 	return self.Cooldowns[name]
 end
@@ -442,10 +442,10 @@ function Combat:ResetCombo()
 end
 
 
---Check If The Player Is In The Suitable State For A Dash 
---And Disable All Movements To Prevent Weird Movements During A Dash
---Apply Linear Velocity For Consistent Movement 
---Set A Cooldown For The Dash
+-- Check If The Player Is In The Suitable State For A Dash 
+-- And Disable All Movements To Prevent Weird Movements During A Dash
+-- Apply Linear Velocity For Consistent Movement 
+-- Set A Cooldown For The Dash
 
 function Combat:Dash()
 	if self:GetState("IsStunned") 
@@ -461,7 +461,7 @@ function Combat:Dash()
 	
 	self:SetState("IsDashing" , true)
 		
-	 local humanoidRootPart:BasePart , humanoid = self:GetMainComponents()
+	 local humanoidRootPart , humanoid = self:GetMainComponents()
 	
 	local direction = humanoidRootPart.CFrame.LookVector 
 	 self:FreezeHumanoid()
@@ -512,7 +512,7 @@ function Combat:Punch()
 	
 	self:SetHumanoid(10 , 0 , true)
 
-	for _, hitsHumanoid: Humanoid in ipairs(hits) do
+	for _, hitsHumanoid in ipairs(hits) do
 			
 			local targetCombat = self:GetCombat(hitsHumanoid)
 			local targetPrimaryPart = targetCombat.Character.PrimaryPart
@@ -553,7 +553,7 @@ function Combat:Punch()
 end
 
 
---Player Intialization On Spwan
+-- Player Intialization On Spwan
 Players.PlayerAdded:Connect(function(player)
 	player.CharacterAdded:Connect(function(character)
 		if playerCombats[player.UserId] then
@@ -576,17 +576,17 @@ Players.PlayerAdded:Connect(function(player)
 	end)
 end)
 
---Remove The Player's Combat Instance In Order To Prevent Memory Leaks
+-- Remove The Player's Combat Instance In Order To Prevent Memory Leaks
 Players.PlayerRemoving:Connect(function(player)
 	playerCombats[player.UserId] = nil
 end)
 
 
---Handle Client - Server Logic
---Check If The Client Is ALlowed To Execute The Combat Action Using allowedEvents
---Every Client Has A Isolated Combat Instance To Prevent Duplicated Logic
---Check If The Method Is A Function
---Execute The Action
+-- Handle Client - Server Logic
+-- Check If The Client Is ALlowed To Execute The Combat Action Using allowedEvents
+-- Every Client Has A Isolated Combat Instance To Prevent Duplicated Logic
+-- Check If The Method Is A Function
+-- Execute The Action
 
 combatRemote.OnServerEvent:Connect(function(plr , event:string)
 	if not allowedEvents[event] then 
