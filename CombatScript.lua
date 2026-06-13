@@ -51,11 +51,11 @@ export type Combat = {
 		
 } 
 
---/Combat State
+-- Combat State
 local Combat:Combat = {}
 Combat.__index = Combat
 
---/ Active Combat States
+-- Active Combat States
 local playerCombats = {}
 local npcCombats = {}
 
@@ -80,8 +80,8 @@ local CONFIG = {
 }
 
 
---Each Character Receives Its Own Combat Instance to Isolate
---States , Cooldowns And Combat Logic
+-- Each Character Receives Its Own Combat Instance to Isolate
+-- States , Cooldowns And Combat Logic
 
 function Combat.new(character:Model)
 	if not character then 
@@ -137,8 +137,8 @@ function Combat:Destroy()
 end
 
 
---Retreive The Combat Instance From Any Descendant Of The Model 
-function Combat:GetCombat(descendant:Instance)
+-- Retreive The Combat Instance From Any Descendant Of The Model 
+function Combat:GetCombat(descendant)
 	local targetModel 
 	
 	if descendant and descendant:IsA("Model") then
@@ -159,7 +159,7 @@ function Combat:GetCombat(descendant:Instance)
 	  return targetCombat 
 end
 
---Return Core Physical Components Of A Character 
+-- Return Core Physical Components Of A Character 
 -- HumanoidRootPart For Movement / Physics 
 -- Humanoid For State Control
 
@@ -193,11 +193,11 @@ function Combat:SetHumanoid(speed:number , height:number , canrotate:boolean)
 	
 end
 
- --Register Callback Triggers Whenever A Combat Instance Changes
- --Used For 
- --Ui Updates 
- --Animation Syncing
- --Vfx Triggers
+ -- Register Callback Triggers Whenever A Combat Instance Changes
+ -- Used For 
+ -- Ui Updates 
+ -- Animation Syncing
+ -- Vfx Triggers
 
 function Combat:OnChanged(callback)
 	table.insert(self.Events.OnChanged , callback)
@@ -215,7 +215,7 @@ function Combat:Callback(eventCall:string , ...)
 	end
 end
 
---Used Spatial Query (GetPartsBoundsInBox)
+-- Used Spatial Query (GetPartsBoundsInBox)
 --  To Avoid UnReliable Touched Events
 --  To Prevent Physics-Based Exploit 
 --  To Ensure Consistent Hit Registration
@@ -236,8 +236,8 @@ function Combat:CreateHitbox(range , size , ignorelist)
 		
 		local primaryPart = model.PrimaryPart 
 		 
-		 local targetCombat: Combat = self:GetCombat(primaryPart)
-		 local targetHumanoidRootPart , targetHumanoid: Humanoid = targetCombat:GetMainComponents()
+		 local targetCombat = self:GetCombat(primaryPart)
+		 local targetHumanoidRootPart , targetHumanoid = targetCombat:GetMainComponents()
 		if  targetHumanoid and targetHumanoid.Health > 0  then 
 			
 			if not table.find(hitHumanoids , targetHumanoid)   then
@@ -249,10 +249,10 @@ function Combat:CreateHitbox(range , size , ignorelist)
 	return hitHumanoids
 end
 
---The Instance's State Is Set Using Attributes To Allow Replication
---Any State Changes Are Replicated To The Client 
---To Allow Client Ui Changes
---Sync The Animations 
+-- The Instance's State Is Set Using Attributes To Allow Replication
+-- Any State Changes Are Replicated To The Client 
+-- To Allow Client Ui Changes
+-- Sync The Animations 
 
 
 function Combat:SetState(name:string , value:any)
@@ -268,10 +268,10 @@ function Combat:GetState(name:string)
 	return character:GetAttribute(name)
 end
 
---UnStun The Combat Object 
---Cancel The UnStun( Using task.cancel() )If The Method Was Called Again
---Set A New UnStun Timer Using task.delay() 
---This Is To Ensure Consistency And To Prevent Weird Desyncs
+-- UnStun The Combat Object 
+-- Cancel The UnStun( Using task.cancel() )If The Method Was Called Again
+-- Set A New UnStun Timer Using task.delay() 
+-- This Is To Ensure Consistency And To Prevent Weird Desyncs
 
 function Combat:UnStun()	
 	if self.revertStun  then
@@ -289,8 +289,8 @@ function Combat:UnStun()
 	
 end
 
- --This is Used For The Stun , Ragdoll And The Dash
- --To Prevent Weird Client Input Desyncs 
+ -- This is Used For The Stun , Ragdoll And The Dash
+ -- To Prevent Weird Client Input Desyncs 
 
 function Combat:FreezeHumanoid()
 	self:SetHumanoid(0 , 0 , false)
