@@ -59,7 +59,6 @@ Combat.__index = Combat
 local playerCombats = {}
 local npcCombats = {}
 
-
 -- Config Values (Tuning Constants)
 local CONFIG = {
 	stunCooldown = 1.75,
@@ -78,7 +77,6 @@ local CONFIG = {
 
 	maxDistance = 12
 }
-
 
 -- Each Character Receives Its Own Combat Instance to Isolate
 -- States , Cooldowns And Combat Logic
@@ -121,7 +119,6 @@ function Combat.new(character:Model)
 	return self
 end
 
-
 -- Destroy The Combat Instance To Prevent Memory Leak
 function Combat:Destroy()
 	if self.DeathConnection then 
@@ -135,7 +132,6 @@ function Combat:Destroy()
 	end
 	table.clear(self)
 end
-
 
 -- Retreive The Combat Instance From Any Descendant Of The Model 
 function Combat:GetCombat(descendant)
