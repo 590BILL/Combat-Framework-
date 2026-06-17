@@ -1,3 +1,5 @@
+
+
 -- COMBAT FRAMEWORK 
 -- Controls All Melee Combat Logic (Punch , Block , Dash)
 -- Server authoritative cooldowns to prevent exploits
@@ -17,60 +19,24 @@ local allowedEvents = {
   Punch = true , Block = true , UnBlock = true , Dash = true
 }
 
-export type Combat = {
-	Character :Model ,
-	Cooldowns : {[string] : boolean } ,
-	 
-	Humanoid :Humanoid ,
-	HumanoidRootPart :BasePart, 
-	-- State System 
-
-	GetCombat : (self :Combat , descendant :Instance) -> Combat? , 
-	ApplyHumanoidProperties : (self :Combat , speed :number , height :number , canrotate :boolean) -> (),
-	SetState : (self :Combat , name :string , value :any) -> () ,
-	GetState : (self :Combat , name :string) -> any ,
-
-
-	SetCooldown : (self :Combat, name :string , duration :number) -> () ,
-	HasCooldown : (self :Combat , cooldownName :string) -> boolean ,
-	FreezeHumanoid : (self :Combat) -> (),
-	ResetHumanoid : (self :Combat) -> (),
-	CanAct : (self :Combat) -> boolean ,
-	ResolveHit : (self :Combat , targetHumanoid :Humanoid) -> () ,
-	HandleHits : (self :Combat , hits : {[Humanoid]:boolean}) -> () ,
-	GetMainComponents :(self :Combat)  -> (BasePart , Humanoid) ,
-	Destroy : (self :Combat) -> () ,
-	IncrementCombo : (self :Combat) -> () ,
-
-	-- Combat Actions
-
-	Punch : (self :Combat) -> (),
-	Block : (self :Combat) -> (),
-	UnBlock : (self :Combat) -> (),
-	Dash :  (self :Combat) -> (),
-	Stun : (self :Combat , target:Humanoid) -> (),
-	UnStun:(self :Combat) -> () ,
-} 
-
 -- Combat State
-local Combat :Combat  = {}
+local Combat = {}
 Combat.__index = Combat
-
--- Active Combat States
-local playerCombats = {}
-local npcCombats  = {}
-
 
 -- Config Values (Tuning Constants)
 local CONFIG = {
 	stunCooldown = 1.75,
-	stunKnockBack = 25 ,
+	stunKnockBack = 25,
 	
-	maxDistance = 8 ,
+	maxDistance = 8,
 
-	punchCooldown = 0.75 ,
+-- Event Implentation Because The cooldown completion logic was being used from two places
+	punchCooldown = {Cooldown = 0.75 , Event = function(playerCombat) 
+		playerCombat:ResetHumanoid()
+	end,
+		} ,
 	comboResetTimer = 5,
-	damage = 10 ,
+	damage = 10,
 	
 	ragdollCooldown = 2 ,
 	ragdollKnockBack = 50,
@@ -81,9 +47,13 @@ local CONFIG = {
 
 }
 
--- Each character to be granted their own Combat Instance
--- To prevent the states and cooldowns being duplicated
+-- Active Combat States
+local playerCombats = {}
+local npcCombats  = {}
 
+
+-- Each character to be granted their own Combat Instance
+-- To prevent the states and cooldowns from being duplicated
 function Combat.new(character :Model)
 	if not character then 
 		return
@@ -95,7 +65,7 @@ function Combat.new(character :Model)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 	
-	if not humanoid or humanoidRootPart then 
+	if not humanoid or not humanoidRootPart then 
 		return
 	end
 	
@@ -105,7 +75,7 @@ function Combat.new(character :Model)
 	
 	self.Cooldowns = {}
 	
-	-- Create a event listener to listen to any state changes 
+	-- Create a event listener to listen to any state changes and fire them to the client 
 	self.Events = {
 		OnChanged = {},
 	}
@@ -136,9 +106,9 @@ function Combat.new(character :Model)
 end
 
 
+
 -- Destroy the character's combat instance to prevent memory leaks 
 -- And to prevent the combat from being desynced
-
 function Combat:Destroy()
 	if self.DeathConnection then 
 		self.DeathConnection:Disconnect()
@@ -155,8 +125,7 @@ function Combat:Destroy()
 	table.clear(self)
 end
 	
--- Retreive the combat instance
-
+-- Retreive the combat instance of a model and replicate changes to the client 
 function Combat:GetCombat(descendant:Instance)
 	local targetModel 
 	
@@ -180,9 +149,6 @@ function Combat:GetCombat(descendant:Instance)
 end
 
 
-
--- Set The Necessary Humanoid Properties Of The Character
-
 function Combat:ApplyHumanoidProperties(speed , height , canrotate)
 	if not self.Character then
 		return
@@ -201,15 +167,12 @@ end
 
 
 -- Insert The methods that will be called later when a state change occurs
-
 function Combat:OnChanged(callback)
 	table.insert(self.Events.OnChanged , callback)
 end
 
 
--- Callback all the functions tied to a specific event 
--- To replicate changes to the client 
-
+-- Callback all the functions tied to a specific event to replicate changes to the client  
 function Combat:Callback(eventCall:string , ...)
 	local events = self.Events[eventCall]
 	if not events then 
@@ -222,9 +185,7 @@ function Combat:Callback(eventCall:string , ...)
 end
 
 
--- Uses spatial queries for more consistent hit detection
--- And to prevent physics based exploits
-
+-- Uses spatial queries for more consistent hit detection and to prevent physics based exploits
 function Combat:QueryHits(range , size , ignorelist)
 	local overlapParams = self.OverlapParams or OverlapParams.new()
 	
@@ -232,40 +193,43 @@ function Combat:QueryHits(range , size , ignorelist)
 		self.OverlapParams = overlapParams
 	end
 	
+	if self.hitHumanoids then
+		table.clear(self.hitHumanoids)
+		self.hitHumanoids = nil
+	end
+	
 	overlapParams.FilterType = Enum.RaycastFilterType.Exclude
-	overlapParams.FilterDescendantsInstances = ignorelist or {}
+	overlapParams.FilterDescendantsInstances = ignorelist
 	
 	local parts = workspace:GetPartBoundsInBox(range , size , overlapParams)
-	local hitHumanoids = {}
+	self.hitHumanoids = {}
 	
 	for _, part in ipairs(parts) do
-		 local model = part:FindFirstAncestorOfClass("Model")
-		if not model or not model.PrimaryPart  then
+		 local targetmodel = part:FindFirstAncestorOfClass("Model")
+		
+		if not targetmodel or not targetmodel.PrimaryPart  then
 			continue
 		 end
           
-		 local targetCombat = self:GetCombat(model.PrimaryPart)
-		
-		if not targetCombat then
-			continue
-		end
-		local targetHumanoid = self.Humanoid
+		local targetHumanoid = targetmodel and targetmodel:FindFirstChildOfClass("Humanoid")
 		
 		if  targetHumanoid and targetHumanoid.Health > 0  then 
-			if not hitHumanoids[targetHumanoid] then
-				hitHumanoids[targetHumanoid] = true
+			if not self.hitHumanoids[targetHumanoid] then
+				self.hitHumanoids[targetHumanoid] = true
 			end
 		end		
 		
 	end
-	return hitHumanoids
+	return self.hitHumanoids
 end
 
 
--- Handle the all the targets that got caught in the player's hitbox
--- Check the distance between the target's character and the character to prevent exploit
--- Check if the target's character doesn't have the ragdoll state enabled to ensure consistent combat
--- Decide whether to stun or ragdoll them depending on the character's combo threshold
+--[[ 
+ Handle the all the targets that got caught in the player's hitbox
+ Check the distance between the target's character and the character to prevent exploit
+ Check if the target's character doesn't have the ragdoll state enabled to ensure consistent combat
+ Decide whether to stun or ragdoll them depending on the character's combo threshold 
+ ]]
 
 function Combat:HandleHits(hits)
 
@@ -319,7 +283,6 @@ end
 
 
 -- Check the main states to ensure the character is in the suitable state for a combat action
-
 function Combat:CanAct()
 	local selfHumanoid = self.Humanoid
 	return not (
@@ -332,7 +295,6 @@ function Combat:CanAct()
 end
 
 -- Set the states using attributes to allow replication to the client
-
 function Combat:SetState(name , value)
 	local character = self.Character
 	if not character then
@@ -350,7 +312,6 @@ end
 
 -- Unstun the character to prevent freeze
 -- This is to ensure that the player can escape if the enemy has stopped punching
-
 function Combat:UnStun()	
 	if self.revertStun  then
 		task.cancel(self.revertStun)
@@ -370,21 +331,22 @@ end
 
 -- This method is used to freeze the  character's humanoid 
 -- It is used mainly for the stun so that the target can't escape while being punched
-
 function Combat:FreezeHumanoid()
 	self:ApplyHumanoidProperties(0 , 0 , false)
 end
 
--- This method is used to unfreeze the character's humanoid
 
+-- This method is used to unfreeze the character's humanoid
 function Combat:ResetHumanoid()
 	self:ApplyHumanoidProperties(16 , 50 , true)
 end
 
 
--- Enable the "Ragdoll" state for the target's character
--- To prevent the enemy from attacking while the target's character is knocked out  
--- and to ensure consistent combat between the players
+--[[ 
+ Enable the "Ragdoll" state for the target's character
+ To prevent the enemy from attacking while the target's character is knocked out  
+ and to ensure consistent combat between the players 
+ ]]
 
 function Combat:Ragdoll()
 	 local selfHumanoid = self.Humanoid
@@ -416,7 +378,6 @@ function Combat:Ragdoll()
 end
 
 -- Check to whether stun or to ragdoll the target character depending on the enemy's combo threshold
-
 function Combat:ResolveHit(targetHumanoid :Humanoid)
 	 
 	 local comboCount = self:GetState("ComboCount")
@@ -436,9 +397,11 @@ function Combat:ResolveHit(targetHumanoid :Humanoid)
 	
 end
 
--- Stun the target character to ensure consistent combat 
--- Validate the target character's ragdoll state to prevent duplicate physics state
--- Freeze the target character so that they cannot escape
+--[[ 
+ Stun the target character to ensure consistent combat 
+ Validate the target character's ragdoll state to prevent duplicate physics state
+ Freeze the target character so that they cannot escape 
+]]
 
 function Combat:Stun()
 	 local selfHumanoidRootPart = self.HumanoidRootPart
@@ -458,11 +421,14 @@ function Combat:Stun()
 	self:UnStun()
 end
 
--- Check where the target's character is facing
--- To prevent a full 360 degree block abuse 
--- Prevent further calculation if the target character does not have the "Blocking" state enabled
+--[[ 
+ Check where the target's character is facing
+ To prevent a full 360 degree block abuse 
+ Prevent further calculation if the target character does not have the "Blocking" state enabled 
+]]
+
 function Combat:CheckBlockAngle(targethumanoid:Humanoid)
-	local self = self::Combat
+	
 	local targetCombat = self:GetCombat(targethumanoid)
     local targetHumanoidRootPart = targetCombat.HumanoidRootPart
 	
@@ -486,6 +452,7 @@ function Combat:Block()
 	self:SetState("IsBlocking" , true)
 end
 
+
 -- Check if the player is alive to unblock the attack
 -- Check if the character is already in the blocking state to prevent useless replication
 function Combat:UnBlock()
@@ -498,23 +465,32 @@ function Combat:UnBlock()
 	end
 end
 
+
 -- Enforces Server-Side cooldowns to prevent client side exploits
 -- Replicate the changes to the client to prevent combat animation desyncs
-function Combat:SetCooldown(name:string , duration:number)
+function Combat:SetCooldown(name:string , duration: number|{})
 	if self.Cooldowns[name] then 
 		return 
 	end
 	self.Cooldowns[name] = true
 	self:Callback("OnChanged" , name , true)
 	
-	task.delay(duration , function()
+	task.delay(duration.Cooldown , function()
 		self.Cooldowns[name] = nil
+		
 		self:Callback("OnChanged" , name , nil)
+		
+		-- Event called for the punch function
+		if not duration.Event then
+			return
+		end
+		duration.Event(self)
+		
 	end)
 end
 
---Check whether if the combat action is on cooldown or not  
 
+--Check whether if the combat action is on cooldown or not  
 function Combat:HasCooldown(name:string)
 	return self.Cooldowns[name]
 end
@@ -539,10 +515,12 @@ function Combat:ResetCombo()
 end
 
 
--- Check if the character doesn't have any secondary state enabled to prevent state override
--- Apply LinearVelocity instead of BodyVelocity because it integrates with Roblox's modern physics solver 
--- To ensure consistent movement 
--- Set the "Dashing" state to sync the animation with the client 
+--[[ 
+ Check if the character doesn't have any secondary state enabled to prevent state override
+ Apply LinearVelocity instead of BodyVelocity because it integrates with Roblox's modern physics solver 
+ To ensure consistent movement 
+ Set the "Dashing" state to sync the animation with the client 
+ ]]
 function Combat:Dash()
 	
 	if not self:CanAct() then
@@ -585,11 +563,13 @@ function Combat:Dash()
 
 end
 
--- Punch attack 
--- Create a hitbox infront of the player and get every validated target inside it
--- Apply damage to all the targets of the hitbox 
--- Increment the combo count to prevent animation desyncs
--- Reset the combo count if the player is idle for a while to prevent ragdoll abuse
+--[[ 
+ Punch attack 
+ Create a hitbox infront of the player and get every validated target inside it
+ Apply damage to all the targets of the hitbox 
+ Increment the combo count to prevent animation desyncs
+ Reset the combo count if the player is idle for a while to prevent ragdoll abuse
+ ]]
 function Combat:Punch()
 
   if not self:CanAct() or self:HasCooldown("Punch") then
@@ -607,9 +587,7 @@ function Combat:Punch()
 	
 	self:SetCooldown("Punch" , CONFIG.punchCooldown)
 
-    task.delay(CONFIG.punchCooldown , function() 
-      self:ResetHumanoid()
-    end)
+
  
  self:ResetCombo()
 end
@@ -644,23 +622,24 @@ Players.PlayerRemoving:Connect(function(player)
 	playerCombats[player.UserId] = nil
 end)
 
--- Receive calls from the client  
--- check if the method is allowed by the server
--- Get the player's combat instance to callback the method the client requested 
--- Check if the method isn't on cooldown
+--[[ Receive calls from the client  
+ Check if the method is allowed by the server to prevent exploitation from the client
+ Get the player's combat instance to callback the method the client requested 
+ Check if the method isn't on cooldown to prevent spam
+]]
 combatRemote.OnServerEvent:Connect(function(plr , event)
-	if not allowedEvents[event] then 
+	if not allowedEvents[event]  then 
 		return 
 	end  
+	
 	local PlayerCombat = playerCombats[plr.UserId]     
 	
-	if not PlayerCombat then 
+	if not PlayerCombat 
+		or PlayerCombat.Character ~= plr.Character 
+		or PlayerCombat:HasCooldown(event)  then 
 		return 
 	end
-	
-	if PlayerCombat:HasCooldown(event)  then 
-		return 
-	end
+
 	local method = PlayerCombat[event]
 	
 	if type(method) ~= "function" then 
