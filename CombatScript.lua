@@ -410,7 +410,6 @@ end
  To prevent the enemy from attacking while the target's character is knocked out  
  and to ensure consistent combat between the players 
  ]]
-
 function Combat:Ragdoll()
 	local selfHumanoid = self.Humanoid
 	if self:GetState("IsRagdoll") then 
@@ -495,7 +494,6 @@ end
  To prevent a full 360 degree block abuse 
  Prevent further calculation if the target character does not have the "Blocking" state enabled 
 ]]
-
 function Combat:CheckBlockAngle(targethumanoid:Humanoid)
 
 	local targetCombat = self:GetCombat(targethumanoid)
@@ -690,7 +688,6 @@ end
  Check if the method isn't on cooldown to prevent spams
  Check the last time the action was called to prevent remote spams 
 ]]
-
 function Combat:Init()
 	
 combatRemote.OnServerEvent:Connect(function(player , event)
