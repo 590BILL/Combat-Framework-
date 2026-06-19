@@ -1,20 +1,17 @@
 --[[
-COMBAT FRAMEWORK 
- This Script is for a combat framework 
- 
+Combat framework 
+
  
  Overview :
  A Combat Instance is created for the character on spawn
- Cooldowns are managed on the server to prevent exploits
- The Combat instance are stored inside tables to allow easy tracking 
- Different states are replicated with the player's character through attributes
- Changes to the client automatically replicate through these states 
- Client stores cooldown flags inside a table locally to prevent overrides and animation desyncs
+ Cooldowns are managed on the server to prevent client-side exploits
+ Combat instances are stored inside tables to allow easy lookup and tracking 
+ Character states are replicated using Attributes
+ Changes to the client automatically replicate through these states
+ Client maintains local cooldown flags inside a table to prevent state overrides and animation desynchronization
  Cooldown updates replicate to the client to keep the animations synchronized
 
-
-   
-Minimal Server Code ~
+ Server Bootstrap  ~
 
 Players.PlayerAdded:Connect(function(player)
  
@@ -24,6 +21,7 @@ Players.PlayerAdded:Connect(function(player)
 	end)
 end)
 
+Combat:Init()
 ]]
 
 --!optimize 2
@@ -137,11 +135,9 @@ local combat = self.new(character)
 			 playerCombats[player.UserId] = nil
 			 return
 		   end	
-			
-			
-		end)
 	
-		
+		end)
+
 		if not player then
 		   npcCombats[character] = combat
 		  return combat 
@@ -283,6 +279,8 @@ end
  Handle the all the targets that got caught in the player's hitbox
  Check the distance between the target's character and the character to prevent exploit
  Check if the target's character doesn't have the ragdoll state enabled to ensure consistent combat
+ Check if the target is not flinged to prevent physic exploits 
+ Check If the target has been hit before to prevent duplicated hits  
  Decide whether to stun or ragdoll them depending on the character's combo threshold 
  ]]
 function Combat:HandleHits(hits)
@@ -436,27 +434,34 @@ function Combat:Ragdoll()
 	task.delay(CONFIG.ragdollCooldown , function()
 		self:ResetHumanoid() 
 		self:SetState("IsRagdoll" , false)
-		selfHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-
+		
+		 do repeat 
+				task.wait(0.1)
+				selfHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+			until selfHumanoid:GetState() ~= Enum.HumanoidStateType.Physics
+	  end
 	end)
-
+	  
+	 
+	  
 end
 
 -- Check to whether stun or to ragdoll the target character depending on the enemy's combo threshold
+-- Impulse is used instead of AssemblyLinearVelocity to make it a single impact rather than a focing velocity
 function Combat:ApplyHitEffect(targetHumanoid)
 
 	local comboCount = self:GetState("ComboCount")
 	local targetCombat = self:GetCombat(targetHumanoid)
 
-	local targetHumanoidRootPart = targetCombat.HumanoidRootPart
-	local selfHumanoidRootPart = self.HumanoidRootPart
+	local targetHumanoidRootPart = targetCombat.HumanoidRootPart :: BasePart
+	local selfHumanoidRootPart = self.HumanoidRootPart :: BasePart
 
 	if comboCount < 4 then
 		targetCombat:Stun()
-		targetHumanoidRootPart.AssemblyLinearVelocity = selfHumanoidRootPart.CFrame.LookVector * CONFIG.stunKnockBack + Vector3.new(0 , 0 , -5)
+		targetHumanoidRootPart:ApplyImpulse(selfHumanoidRootPart.CFrame.LookVector * 550)
 	else
 		targetCombat:Ragdoll()
-		targetHumanoidRootPart.AssemblyLinearVelocity =  selfHumanoidRootPart.CFrame.LookVector * CONFIG.ragdollKnockBack + Vector3.new(0 , 0 , -5)
+		targetHumanoidRootPart:ApplyImpulse(selfHumanoidRootPart.CFrame.LookVector * 750)
 	end
 
 
@@ -603,7 +608,7 @@ function Combat:Dash()
 	self:FreezeHumanoid()
 	self:SetState("IsDashing" , true)
 
-	local selfHumanoidRootPart = self.HumanoidRootPart
+	local selfHumanoidRootPart = self.HumanoidRootPart :: BasePart
 
 	local direction = selfHumanoidRootPart.CFrame.LookVector 	 
 
@@ -614,6 +619,8 @@ function Combat:Dash()
 	linearvelocity.Attachment0 = attachment
 	linearvelocity.RelativeTo = Enum.ActuatorRelativeTo.World
 	linearvelocity.ForceLimitsEnabled = false
+	-- direction is multipled by the dash force constant to give the character a burst of movement 
+    -- Add 2 on the y vector of the linear velocity to keep the character upright
 	linearvelocity.VectorVelocity = direction  * CONFIG.dashForce + Vector3.new(0 , 2 , 0)
 
 
@@ -673,8 +680,6 @@ function Combat:Punch()
 
 	self:SetCooldown("Punch" , CONFIG.punchCooldown)
 
-
-
 	self:ResetCombo()
 end
 
@@ -682,14 +687,16 @@ end
  Receive calls from the client  
  Check if the method is allowed by the server to prevent exploitation from the client
  Get the player's combat instance to callback the method the client requested 
- Check if the method isn't on cooldown to prevent spam
- er
+ Check if the method isn't on cooldown to prevent spams
+ Check the last time the action was called to prevent remote spams 
 ]]
 
+function Combat:Init()
+	
 combatRemote.OnServerEvent:Connect(function(player , event)
 	  
 	  if not allowedEvents[event] then 
-			return
+		return
 	  end
 
 	local playerCombat = playerCombats[player.UserId]     
@@ -708,9 +715,11 @@ combatRemote.OnServerEvent:Connect(function(player , event)
 		return 
 	end
 
-	method(playerCombat)
+	 method(playerCombat)
 end)
+		
+end
+
+
 
 return Combat
-return Combat
-
